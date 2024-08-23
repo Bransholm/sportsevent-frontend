@@ -6,12 +6,9 @@ interface Discipline {
 }
 
 interface Arena {
+  id: number;
   name: string;
-  type: string;
-  shape: string;
-  surface: string;
-  length: number;
-  lanes: number;
+  disciplines: Discipline[];
 }
 
 interface Event {
@@ -29,6 +26,18 @@ interface Event {
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("all");
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  const [arenas, setArenas] = useState<Arena[]>([]);
+  const [newEvent, setNewEvent] = useState({
+    participantGender: "",
+    participantAgeGroup: "",
+    maxParticipants: "",
+    date: "",
+    startTime: "",
+    durationMinutes: "",
+    arenaId: "",
+    disciplineId: "",
+  });
 
   const fetchEvents = (discipline: string) => {
     const encodedDiscipline = encodeURIComponent(discipline);
@@ -40,8 +49,16 @@ const Events: React.FC = () => {
       .catch((error) => console.error("Error fetching events:", error));
   };
 
+  const fetchArenas = () => {
+    fetch("http://localhost:8080/arenas")
+      .then((response) => response.json())
+      .then((data) => setArenas(data))
+      .catch((error) => console.error("Error fetching arenas:", error));
+  };
+
   useEffect(() => {
     fetchEvents("all");
+    fetchArenas();
   }, []);
 
   const handleDisciplineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -60,6 +77,77 @@ const Events: React.FC = () => {
         }
       })
       .catch((error) => console.error("Error deleting event:", error));
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setNewEvent({ ...newEvent, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateEvent = () => {
+    const {
+      participantGender,
+      participantAgeGroup,
+      maxParticipants,
+      date,
+      startTime,
+      durationMinutes,
+      arenaId,
+      disciplineId,
+    } = newEvent;
+
+    // Validation check
+    if (
+      !participantGender ||
+      !participantAgeGroup ||
+      !maxParticipants ||
+      !date ||
+      !startTime ||
+      !durationMinutes ||
+      !arenaId ||
+      !disciplineId
+    ) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    fetch("http://localhost:8080/events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        participantGender,
+        participantAgeGroup,
+        maxParticipants: parseInt(maxParticipants),
+        date,
+        startTime,
+        durationMinutes: parseInt(durationMinutes),
+        arenaId: parseInt(arenaId),
+        disciplineId: parseInt(disciplineId),
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to create event");
+        }
+        // Refresh events after creating
+        fetchEvents(selectedDiscipline);
+        // Hide the form and reset inputs
+        setShowCreateForm(false);
+        setNewEvent({
+          participantGender: "",
+          participantAgeGroup: "",
+          maxParticipants: "",
+          date: "",
+          startTime: "",
+          durationMinutes: "",
+          arenaId: "",
+          disciplineId: "",
+        });
+      })
+      .catch((error) => console.error("Error creating event:", error));
   };
 
   return (
@@ -140,6 +228,113 @@ const Events: React.FC = () => {
           ))}
         </tbody>
       </table>
+
+      <div style={{ marginTop: "20px" }}>
+        <a href="#" onClick={() => setShowCreateForm(!showCreateForm)}>
+          {showCreateForm ? "Cancel" : "Create event"}
+        </a>
+      </div>
+
+      {showCreateForm && (
+        <div style={{ marginTop: "20px" }}>
+          <div>
+            <label>Arena: </label>
+            <select
+              name="arenaId"
+              value={newEvent.arenaId}
+              onChange={handleInputChange}
+            >
+              <option value="">Select Arena</option>
+              {arenas.map((arena) => (
+                <option key={arena.id} value={arena.id}>
+                  {arena.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>Discipline: </label>
+            <select
+              name="disciplineId"
+              value={newEvent.disciplineId}
+              onChange={handleInputChange}
+            >
+              <option value="">Select Discipline</option>
+              {arenas
+                .find((arena) => arena.id === parseInt(newEvent.arenaId))
+                ?.disciplines.map((discipline) => (
+                  <option key={discipline.id} value={discipline.id}>
+                    {discipline.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <label>Gender: </label>
+            <select
+              name="participantGender"
+              value={newEvent.participantGender}
+              onChange={handleInputChange}
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div>
+            <label>Age Group: </label>
+            <select
+              name="participantAgeGroup"
+              value={newEvent.participantAgeGroup}
+              onChange={handleInputChange}
+            >
+              <option value="">Select Age Group</option>
+              <option value="Junior">Junior</option>
+              <option value="Adult">Adult</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+          <div>
+            <label>Max Participants: </label>
+            <input
+              type="number"
+              name="maxParticipants"
+              value={newEvent.maxParticipants}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <label>Date: </label>
+            <input
+              type="date"
+              name="date"
+              value={newEvent.date}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <label>Start Time: </label>
+            <input
+              type="time"
+              name="startTime"
+              value={newEvent.startTime}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <label>Duration (minutes): </label>
+            <input
+              type="number"
+              name="durationMinutes"
+              value={newEvent.durationMinutes}
+              onChange={handleInputChange}
+            />
+          </div>
+          <a href="#" onClick={handleCreateEvent}>
+            Create
+          </a>
+        </div>
+      )}
     </div>
   );
 };
