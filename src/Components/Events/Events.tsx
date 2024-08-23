@@ -50,6 +50,18 @@ const Events: React.FC = () => {
     fetchEvents(discipline);
   };
 
+  const deleteEvent = (eventId: number) => {
+    fetch(`http://localhost:8080/events/${eventId}`, { method: "DELETE" })
+      .then((response) => {
+        if (response.ok) {
+          fetchEvents(selectedDiscipline);
+        } else {
+          console.error("Failed to delete event");
+        }
+      })
+      .catch((error) => console.error("Error deleting event:", error));
+  };
+
   return (
     <div>
       <h1>Events</h1>
@@ -89,6 +101,7 @@ const Events: React.FC = () => {
             <th style={{ padding: "1px 2px", textAlign: "left" }}>
               Max Participants
             </th>
+            <th style={{ padding: "1px 2px", textAlign: "left" }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -117,6 +130,11 @@ const Events: React.FC = () => {
               </td>
               <td style={{ padding: "1px 2px", textAlign: "left" }}>
                 {event.maximumParticipants}
+              </td>
+              <td style={{ padding: "1px 2px", textAlign: "left" }}>
+                <a href="#" onClick={() => deleteEvent(event.id)}>
+                  Delete
+                </a>
               </td>
             </tr>
           ))}
