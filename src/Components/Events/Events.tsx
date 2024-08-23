@@ -40,7 +40,16 @@ const Events: React.FC = () => {
     disciplineId: "",
   });
 
-  const [updateEventData, setUpdateEventData] = useState<Event | null>(null);
+  const [updateEventData, setUpdateEventData] = useState({
+    participantGender: "",
+    participantAgeGroup: "",
+    maxParticipants: "",
+    date: "",
+    startTime: "",
+    durationMinutes: "",
+    arenaId: "",
+    disciplineId: "",
+  });
 
   const fetchEvents = (discipline: string) => {
     const encodedDiscipline = encodeURIComponent(discipline);
@@ -155,50 +164,64 @@ const Events: React.FC = () => {
 
   const handleUpdateClick = (event: Event) => {
     setShowUpdateForm(event.id);
-    setUpdateEventData(event);
+    setUpdateEventData({
+      participantGender: event.participantGender,
+      participantAgeGroup: event.participantAgeGroup,
+      maxParticipants: event.maximumParticipants.toString(),
+      date: event.date,
+      startTime: event.startTime,
+      durationMinutes: event.durationMinutes.toString(),
+      arenaId: event.arena.id.toString(),
+      disciplineId: event.discipline.id.toString(),
+    });
   };
 
   const handleUpdateInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    if (updateEventData) {
-      setUpdateEventData({
-        ...updateEventData,
-        [e.target.name]: e.target.value,
-      });
-    }
+    setUpdateEventData({
+      ...updateEventData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleUpdateSubmit = () => {
-    if (updateEventData) {
-      const updateData = {
-        participantGender: updateEventData.participantGender,
-        participantAgeGroup: updateEventData.participantAgeGroup,
-        maxParticipants: updateEventData.maximumParticipants,
-        date: updateEventData.date,
-        startTime: updateEventData.startTime,
-        durationMinutes: updateEventData.durationMinutes,
-        arenaId: updateEventData.arena.id,
-        disciplineId: updateEventData.discipline.id,
-      };
+    const {
+      participantGender,
+      participantAgeGroup,
+      maxParticipants,
+      date,
+      startTime,
+      durationMinutes,
+      arenaId,
+      disciplineId,
+    } = updateEventData;
 
-      fetch(`http://localhost:8080/events/${updateEventData.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData),
+    fetch(`http://localhost:8080/events/${showUpdateForm}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        participantGender,
+        participantAgeGroup,
+        maxParticipants: parseInt(maxParticipants),
+        date,
+        startTime,
+        durationMinutes: parseInt(durationMinutes),
+        arenaId: parseInt(arenaId),
+        disciplineId: parseInt(disciplineId),
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          fetchEvents(selectedDiscipline);
+          setShowUpdateForm(null); // Clear form after update
+        } else {
+          console.error("Failed to update event");
+        }
       })
-        .then((response) => {
-          if (response.ok) {
-            fetchEvents(selectedDiscipline);
-            setShowUpdateForm(null); // Clear form after update
-          } else {
-            console.error("Failed to update event");
-          }
-        })
-        .catch((error) => console.error("Error updating event:", error));
-    }
+      .catch((error) => console.error("Error updating event:", error));
   };
 
   return (
@@ -391,13 +414,13 @@ const Events: React.FC = () => {
         </div>
       )}
 
-      {showUpdateForm && updateEventData && (
+      {showUpdateForm && (
         <div style={{ marginTop: "20px" }}>
           <div>
             <label>Arena: </label>
             <select
               name="arenaId"
-              value={updateEventData.arena.id}
+              value={updateEventData.arenaId}
               onChange={handleUpdateInputChange}
             >
               <option value="">Select Arena</option>
@@ -412,12 +435,12 @@ const Events: React.FC = () => {
             <label>Discipline: </label>
             <select
               name="disciplineId"
-              value={updateEventData.discipline.id}
+              value={updateEventData.disciplineId}
               onChange={handleUpdateInputChange}
             >
               <option value="">Select Discipline</option>
               {arenas
-                .find((arena) => arena.id === updateEventData.arena.id)
+                .find((arena) => arena.id === parseInt(updateEventData.arenaId))
                 ?.disciplines.map((discipline) => (
                   <option key={discipline.id} value={discipline.id}>
                     {discipline.name}
@@ -479,8 +502,8 @@ const Events: React.FC = () => {
             <label>Max Participants: </label>
             <input
               type="number"
-              name="maximumParticipants"
-              value={updateEventData.maximumParticipants}
+              name="maxParticipants"
+              value={updateEventData.maxParticipants}
               onChange={handleUpdateInputChange}
             />
           </div>
