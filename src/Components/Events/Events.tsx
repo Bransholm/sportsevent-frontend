@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 
+// Definerer interface for Discipline
 interface Discipline {
   id: number;
   name: string;
 }
 
+// Definerer interface for Arena, som indeholder en liste af Disciplines
 interface Arena {
   id: number;
   name: string;
   disciplines: Discipline[];
 }
 
+// Definerer interface for Event, som indeholder alle nødvendige detaljer
 interface Event {
   id: number;
   participantGender: string;
@@ -24,11 +27,14 @@ interface Event {
 }
 
 const Events: React.FC = () => {
+  // Brug af useState hook til at gemme og håndtere event data
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("all");
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
-  const [showUpdateForm, setShowUpdateForm] = useState<number | null>(null); // Track which event is being updated
+  const [showUpdateForm, setShowUpdateForm] = useState<number | null>(null); // Sporer hvilket event der opdateres
   const [arenas, setArenas] = useState<Arena[]>([]);
+
+  // Initialisering af state for et nyt event
   const [newEvent, setNewEvent] = useState({
     participantGender: "",
     participantAgeGroup: "",
@@ -40,6 +46,7 @@ const Events: React.FC = () => {
     disciplineId: "",
   });
 
+  // Initialisering af state for opdatering af et eksisterende event
   const [updateEventData, setUpdateEventData] = useState({
     participantGender: "",
     participantAgeGroup: "",
@@ -51,6 +58,7 @@ const Events: React.FC = () => {
     disciplineId: "",
   });
 
+  // Funktion til at hente events baseret på valgt disciplin
   const fetchEvents = (discipline: string) => {
     const encodedDiscipline = encodeURIComponent(discipline);
     fetch(
@@ -61,6 +69,7 @@ const Events: React.FC = () => {
       .catch((error) => console.error("Error fetching events:", error));
   };
 
+  // Funktion til at hente alle arenaer
   const fetchArenas = () => {
     fetch("http://localhost:8080/arenas")
       .then((response) => response.json())
@@ -68,17 +77,20 @@ const Events: React.FC = () => {
       .catch((error) => console.error("Error fetching arenas:", error));
   };
 
+  // useEffect hook til at hente alle events og arenaer ved første rendering
   useEffect(() => {
     fetchEvents("all");
     fetchArenas();
   }, []);
 
+  // Håndterer ændring af valgt disciplin
   const handleDisciplineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const discipline = e.target.value;
     setSelectedDiscipline(discipline);
     fetchEvents(discipline);
   };
 
+  // Funktion til at slette et event
   const deleteEvent = (eventId: number) => {
     fetch(`http://localhost:8080/events/${eventId}`, { method: "DELETE" })
       .then((response) => {
@@ -91,12 +103,14 @@ const Events: React.FC = () => {
       .catch((error) => console.error("Error deleting event:", error));
   };
 
+  // Håndterer inputændringer for nyt event
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     setNewEvent({ ...newEvent, [e.target.name]: e.target.value });
   };
 
+  // Funktion til at oprette et nyt event
   const handleCreateEvent = () => {
     const {
       participantGender,
@@ -109,7 +123,7 @@ const Events: React.FC = () => {
       disciplineId,
     } = newEvent;
 
-    // Validation check
+    // Validering af inputfelter
     if (
       !participantGender ||
       !participantAgeGroup ||
@@ -144,9 +158,9 @@ const Events: React.FC = () => {
         if (!response.ok) {
           throw new Error("Failed to create event");
         }
-        // Refresh events after creating
+        // Opdater events efter oprettelse
         fetchEvents(selectedDiscipline);
-        // Hide the form and reset inputs
+        // Skjul formularen og nulstil inputfelter
         setShowCreateForm(false);
         setNewEvent({
           participantGender: "",
@@ -162,6 +176,7 @@ const Events: React.FC = () => {
       .catch((error) => console.error("Error creating event:", error));
   };
 
+  // Håndterer klik på opdateringsknappen for et event
   const handleUpdateClick = (event: Event) => {
     setShowUpdateForm(event.id);
     setUpdateEventData({
@@ -176,6 +191,7 @@ const Events: React.FC = () => {
     });
   };
 
+  // Håndterer inputændringer for opdatering af event
   const handleUpdateInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -185,6 +201,7 @@ const Events: React.FC = () => {
     });
   };
 
+  // Funktion til at indsende opdateret event
   const handleUpdateSubmit = () => {
     const {
       participantGender,
@@ -216,7 +233,7 @@ const Events: React.FC = () => {
       .then((response) => {
         if (response.ok) {
           fetchEvents(selectedDiscipline);
-          setShowUpdateForm(null); // Clear form after update
+          setShowUpdateForm(null); // Ryd formularen efter opdatering
         } else {
           console.error("Failed to update event");
         }
